@@ -1,0 +1,38 @@
+.footer {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--muted);
+}
+
+.footer div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.socials {
+  display: flex;
+  gap: 12px;
+}
+
+.socials a {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: var(--surface);
+}
+
+@media (max-width: 620px) {
+  .footer {
+    flex-direction: column;
+  }
+}

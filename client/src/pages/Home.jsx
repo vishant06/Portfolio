@@ -28,7 +28,20 @@ const Home = () => {
 
   return (
     <section className="hero">
+
       <motion.div
+        className="profile-card"
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.55 }}
+      >
+        <img src="\SAVE_20260619_172554.jpg" alt="Vishant Kumar profile" />
+        <div>
+          <strong>Available for MERN projects</strong>
+          <span>React • Express • MongoDB</span>
+        </div>
+      </motion.div>
+            <motion.div
         initial={{ opacity: 0, x: -22 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.55 }}
@@ -50,18 +63,6 @@ const Home = () => {
           <button className="btn ghost" onClick={downloadResume}>
             <Download size={18} /> Download Resume
           </button>
-        </div>
-      </motion.div>
-      <motion.div
-        className="profile-card"
-        initial={{ opacity: 0, scale: 0.94 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.55 }}
-      >
-        <img src="\SAVE_20260619_172554.jpg" alt="Vishant Kumar profile" />
-        <div>
-          <strong>Available for MERN projects</strong>
-          <span>React • Express • MongoDB</span>
         </div>
       </motion.div>
     </section>

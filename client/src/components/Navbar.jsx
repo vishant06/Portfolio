@@ -14,7 +14,7 @@ const Navbar = () => {
     <header className={styles.header}>
       <nav className={styles.nav}>
         <NavLink to="/" className={styles.logo} onClick={() => setOpen(false)}>
-          VK
+          &lt;VK/&gt;
         </NavLink>
         <button className={styles.menuButton} onClick={() => setOpen((value) => !value)} aria-label="Toggle menu">
           {open ? <X size={22} /> : <Menu size={22} />}

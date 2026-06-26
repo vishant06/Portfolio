@@ -397,3 +397,52 @@ textarea:focus {
     font-size: 2.4rem;
   }
 }
+.education-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+gap:1.5rem;
+margin-top:2rem;
+}
+
+.education-box{
+padding:1.2rem;
+border:1px solid rgba(255,255,255,.08);
+border-radius:16px;
+background:rgba(255,255,255,.02);
+}
+
+.education-box h4{
+display:flex;
+align-items:center;
+gap:.5rem;
+margin-bottom:1rem;
+}
+
+.education-box ul{
+padding-left:1rem;
+line-height:1.8;
+}
+
+.education-box .chips{
+display:flex;
+flex-wrap:wrap;
+gap:.6rem;
+}
+.resume-empty{
+    min-height:70vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    gap:1rem;
+}
+
+.resume-empty h2{
+    font-size:2rem;
+}
+
+.resume-empty p{
+    opacity:.7;
+    max-width:450px;
+}

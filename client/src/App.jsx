@@ -9,6 +9,7 @@ import Projects from './pages/Projects.jsx';
 import Skills from './pages/Skills.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import Login from './pages/admin/Login.jsx';
+import Resume from "./pages/Resume";
 
 const App = () => (
   <Routes>
@@ -19,6 +20,7 @@ const App = () => (
       <Route path="/projects" element={<Projects />} />
       <Route path="/education" element={<Education />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/resume" element={<Resume />} />
     </Route>
     <Route path="/admin/login" element={<Login />} />
     <Route

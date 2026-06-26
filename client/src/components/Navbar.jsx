@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import styles from './Navbar.module.css';
 
-const links = ['Home', 'About', 'Skills', 'Projects', 'Education', 'Contact'];
+const links = ['Home', 'About', 'Skills', 'Projects', 'Education', 'Contact', 'Resume'];
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);

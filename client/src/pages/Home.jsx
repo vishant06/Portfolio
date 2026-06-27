@@ -35,7 +35,7 @@ const Home = () => {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.55 }}
       >
-        <img src="\SAVE_20260619_172554.jpg" alt="Vishant Kumar profile" />
+        <img src="IMG_3500.JPG" alt="Vishant Kumar profile" />
         <div>
           <strong>Available for MERN projects</strong>
           <span>React • Express • MongoDB</span>

@@ -17,7 +17,7 @@
 }
 
 .logo {
-  width: fit-content;
+  width: 44px;
   height: 44px;
   display: grid;
   place-items: center;
@@ -25,7 +25,6 @@
   background: var(--accent);
   color: #03121f;
   font-weight: 800;
-  padding: 0 06px;
 }
 
 .links {
@@ -42,6 +41,27 @@
 .links a:hover,
 .links .active {
   color: var(--text);
+}
+
+.adminLink {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 52%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--text) !important;
+  font-weight: 700;
+}
+
+.adminLink:hover,
+.adminLink.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #03121f !important;
 }
 
 .themeButton,
@@ -81,5 +101,9 @@
 
   .links.open {
     display: flex;
+  }
+
+  .adminLink {
+    width: 100%;
   }
 }

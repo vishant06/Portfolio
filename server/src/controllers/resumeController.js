@@ -1,4 +1,5 @@
 import Resume from '../models/Resume.js';
+import { uploadResumePdf } from '../services/cloudinaryService.js';
 
 export const getLatestResume = async (_req, res) => {
   const resume = await Resume.findOne().sort({ uploadedAt: -1 });
@@ -9,10 +10,15 @@ export const getLatestResume = async (_req, res) => {
 export const uploadLatestResume = async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'Resume file is required' });
 
-  const resume = await Resume.create({
-    fileUrl: `/uploads/resumes/${req.file.filename}`,
-    uploadedAt: new Date()
-  });
+  try {
+    const uploadedResume = await uploadResumePdf(req.file);
+    const resume = await Resume.create({
+      fileUrl: uploadedResume.secure_url,
+      uploadedAt: new Date()
+    });
 
-  res.status(201).json(resume);
+    res.status(201).json(resume);
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Unable to upload resume' });
+  }
 };

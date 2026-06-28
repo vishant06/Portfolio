@@ -29,6 +29,8 @@ const Resume = () => {
     loadResume();
   }, []);
 
+  console.log("Resume URL:", resume);
+
   return (
     <section className="resume-page">
 

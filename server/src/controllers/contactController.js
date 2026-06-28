@@ -14,13 +14,15 @@ const sendContactEmail = async (payload) => {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   });
 
-  await transporter.sendMail({
-    from: `"Portfolio Contact" <${process.env.SMTP_USER}>`,
-    to: process.env.CONTACT_RECEIVER_EMAIL || 'kumarvishant602@gmail.com',
-    replyTo: payload.email,
-    subject: `Portfolio inquiry: ${payload.subject}`,
-    text: `Name: ${payload.name}\nEmail: ${payload.email}\n\n${payload.message}`
-  });
+const info = await transporter.sendMail({
+  from: `"Portfolio Contact" <${process.env.SMTP_USER}>`,
+  to: process.env.CONTACT_RECEIVER_EMAIL || 'kumarvishant602@gmail.com',
+  replyTo: payload.email,
+  subject: `Portfolio inquiry: ${payload.subject}`,
+  text: `Name: ${payload.name}\nEmail: ${payload.email}\n\n${payload.message}`
+});
+
+console.log("Email sent:", info);
 };
 
 export const createMessage = async (req, res) => {
@@ -30,7 +32,12 @@ export const createMessage = async (req, res) => {
   }
 
   const saved = await Message.create({ name, email, subject, message });
+  try {
   await sendContactEmail(saved);
+  console.log("✅ Email sent");
+} catch (err) {
+  console.error("❌ SMTP Error:", err);
+}
   res.status(201).json({ message: 'Message sent successfully' });
 };
 

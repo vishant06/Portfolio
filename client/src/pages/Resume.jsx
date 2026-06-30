@@ -83,19 +83,23 @@ console.log("Resume URL:", absoluteAsset(data.fileUrl));
       {loading ? (
         <p>Loading Resume...</p>
       ) : resume ? (
-<Document
-  file={resume}
-  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-  loading={<p>Loading Resume...</p>}
->
-  {Array.from(new Array(numPages), (_, index) => (
-    <Page
-      key={`page_${index + 1}`}
-      pageNumber={index + 1}
-      width={pageWidth}
-    />
-  ))}
-</Document>
+<div className="pdf-wrapper">
+  <Document
+    file={resume}
+    onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+    loading={<p>Loading Resume...</p>}
+  >
+    {Array.from(new Array(numPages), (_, index) => (
+      <Page
+        key={`page_${index + 1}`}
+        pageNumber={index + 1}
+        width={pageWidth}
+        renderTextLayer={false}
+        renderAnnotationLayer={false}
+      />
+    ))}
+  </Document>
+</div>
       ) : (
         <div className="resume-empty">
           <FileX size={60} />

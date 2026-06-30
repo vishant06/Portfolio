@@ -446,3 +446,57 @@ gap:.6rem;
     opacity:.7;
     max-width:450px;
 }
+
+.resume-page {
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.resume-toolbar {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.pdf-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.react-pdf__Page {
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.2);
+}
+
+.react-pdf__Page canvas {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+
+  .resume-page {
+    padding: 20px 10px;
+  }
+
+  .resume-toolbar {
+    flex-direction: column;
+  }
+
+}

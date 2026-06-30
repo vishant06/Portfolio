@@ -2,10 +2,24 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Download, FileX } from "lucide-react";
 import { Link } from "react-router-dom";
 import { absoluteAsset } from "../services/api";
+import { Document, Page } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import { pdfjs } from "react-pdf";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+// pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+//   "pdfjs-dist/build/pdf.worker.min.mjs",
+//   import.meta.url
+// ).toString();
+
 
 const Resume = () => {
   const [resume, setResume] = useState("");
   const [loading, setLoading] = useState(true);
+  const [numPages, setNumPages] = useState(null);
 
   useEffect(() => {
     const loadResume = async () => {
@@ -17,6 +31,9 @@ const Resume = () => {
         const data = await response.json();
 
         if (!response.ok) throw new Error(data.message);
+
+        console.log("API fileUrl:", data.fileUrl);
+console.log("Resume URL:", absoluteAsset(data.fileUrl));
 
         setResume(absoluteAsset(data.fileUrl));
       } catch (err) {
@@ -51,16 +68,19 @@ const Resume = () => {
       {loading ? (
         <p>Loading Resume...</p>
       ) : resume ? (
-        <iframe
-          src={resume}
-          title="Resume"
-          width="100%"
-          height="900"
-          style={{
-            border: 0,
-            borderRadius: "16px",
-          }}
-        />
+<Document
+  file={resume}
+  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+  loading={<p>Loading Resume...</p>}
+>
+  {Array.from(new Array(numPages), (_, index) => (
+    <Page
+      key={`page_${index + 1}`}
+      pageNumber={index + 1}
+      width={900}
+    />
+  ))}
+</Document>
       ) : (
         <div className="resume-empty">
           <FileX size={60} />

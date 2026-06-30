@@ -20,6 +20,7 @@ const Resume = () => {
   const [resume, setResume] = useState("");
   const [loading, setLoading] = useState(true);
   const [numPages, setNumPages] = useState(null);
+  const [pageWidth, setPageWidth] = useState(800);
 
   useEffect(() => {
     const loadResume = async () => {
@@ -46,7 +47,21 @@ console.log("Resume URL:", absoluteAsset(data.fileUrl));
     loadResume();
   }, []);
 
-  console.log("Resume URL:", resume);
+
+  useEffect(() => {
+  const updateWidth = () => {
+    const width = Math.min(window.innerWidth - 20, 900);
+    setPageWidth(width);
+  };
+
+  updateWidth(); // Initial width set karega
+
+  window.addEventListener("resize", updateWidth);
+
+  return () => {
+    window.removeEventListener("resize", updateWidth);
+  };
+}, []);
 
   return (
     <section className="resume-page">

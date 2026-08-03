@@ -14,6 +14,13 @@ const sendContactEmail = async (payload) => {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   });
 
+  try {
+  await transporter.verify();
+  console.log("✅ SMTP Connected");
+} catch (err) {
+  console.error("❌ SMTP Verify Error:", err);
+}
+
 const info = await transporter.sendMail({
   from: `"Portfolio Contact" <${process.env.SMTP_USER}>`,
   to: process.env.CONTACT_RECEIVER_EMAIL || 'kumarvishant602@gmail.com',

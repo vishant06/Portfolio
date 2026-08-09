@@ -35,7 +35,7 @@ const Home = () => {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.55 }}
       >
-        <img src="IMG_3500.JPG" alt="Vishant Kumar profile" />
+        <img src="WhatsApp Image 2026-08-09 at 11.35.46 AM.jpeg" alt="Vishant Kumar profile" />
         <div>
           <strong>Available for MERN projects</strong>
           <span>React • Express • MongoDB</span>

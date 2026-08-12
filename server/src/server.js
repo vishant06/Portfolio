@@ -16,6 +16,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1);
 
 connectDB();
 
@@ -25,6 +26,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 200 }));
+
 
 app.get('/', (_req, res) => {
   res.json({ status: 'ok', message: 'Vishant Kumar Portfolio API' });
@@ -52,4 +54,4 @@ app.use((err, _req, res, _next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`API running on port ${PORT}`));
-console.log(process.env.MONGO_URI);
+// console.log(process.env.MONGO_URI);

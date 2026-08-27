@@ -53,6 +53,11 @@ const Home = () => {
       >
         <span className="eyebrow">
           Vishant Kumar’s developer learning platform
+          
+        </span>
+        <span className="eyebrow">
+          buildwithvishant
+
         </span>
         <h1>Learn. Code. Build.</h1>
         <h2>

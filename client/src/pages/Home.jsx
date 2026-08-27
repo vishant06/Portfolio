@@ -52,13 +52,10 @@ const Home = () => {
         transition={{ duration: 0.55 }}
       >
         <span className="eyebrow">
-          Vishant Kumar’s developer learning platform
-          
-        </span>
-        <span className="eyebrow">
+          Vishant Kumar’s developer learning platform <br />
           buildwithvishant
-
         </span>
+
         <h1>Learn. Code. Build.</h1>
         <h2>
           {profile.title} <span className="typing">{typed}</span>

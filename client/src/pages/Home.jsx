@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 import useTypingEffect from "../hooks/useTypingEffect.js";
 import { absoluteAsset } from "../services/api.js";
 import { profile } from "../data/portfolio.js";
+import { useTheme } from "../context/ThemeContext.jsx";
 // import { Download, Eye } from "lucide-react";
 
 const Home = () => {
+  const { theme } = useTheme();
   const typed = useTypingEffect([
     "React Developer",
     "Node.js Developer",
@@ -28,30 +30,38 @@ const Home = () => {
 
   return (
     <section className="hero">
-
       <motion.div
         className="profile-card"
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.55 }}
       >
-        <img src="img.png" alt="Vishant Kumar profile" />
+        <img
+          src={theme === "dark" ? "/img-dark.png" : "/img-light.png"}
+          alt="Vishant Kumar profile"
+        />
+
         <div>
           <strong>Available for MERN projects</strong>
           <span>React • Express • MongoDB</span>
         </div>
       </motion.div>
-            <motion.div
+      <motion.div
         initial={{ opacity: 0, x: -22 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.55 }}
       >
-        <span className="eyebrow">Vishant Kumar’s developer learning platform</span>
+        <span className="eyebrow">
+          Vishant Kumar’s developer learning platform
+        </span>
         <h1>Learn. Code. Build.</h1>
         <h2>
           {profile.title} <span className="typing">{typed}</span>
         </h2>
-        <p>Quality programming notes, a browser playground, projects and AI-powered learning — all in one place.</p>
+        <p>
+          Quality programming notes, a browser playground, projects and
+          AI-powered learning — all in one place.
+        </p>
         <div className="actions">
           <Link className="btn primary" to="/notes">
             <BookOpen size={18} /> Explore Notes

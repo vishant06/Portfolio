@@ -1359,3 +1359,14 @@ textarea:focus {
   background: #18181b;
   color: white;
 }
+.profile-dark {
+  display: none;
+}
+
+.dark-theme .profile-light {
+  display: none;
+}
+
+.dark-theme .profile-dark {
+  display: block;
+}

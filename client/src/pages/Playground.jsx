@@ -18,6 +18,8 @@ const initial = {
   css: "body { font-family: system-ui; padding: 2rem; color: #0f172a; }\nh1 { color: #0284c7; }",
   javascript: 'console.log("Ready to build");',
 };
+
+
 const languages = [
   { id: "web", label: "HTML / CSS / JS" },
   { id: "javascript", label: "JavaScript" },

@@ -20,6 +20,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 dotenv.config();
 
 const app = express();
+const codeRoutes = require("./routes/codeRoutes");
 app.set("trust proxy", 1);
 
 connectDB();
@@ -30,6 +31,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 200 }));
+
 
 
 app.get('/', (_req, res) => {
@@ -44,6 +46,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/playground', playgroundRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
+app.use("/api/code", codeRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.originalUrl}` });

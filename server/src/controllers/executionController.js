@@ -28,7 +28,7 @@ export const execute = async (req, res) => {
       'Content-Type': 'application/json'
     };
     if (process.env.PISTON_TOKEN) headers.Authorization = 'Bearer ' + process.env.PISTON_TOKEN;
-    const response = await fetch(baseUrl + '/api/v2/execute', {
+    const response = await fetch(baseUrl, {
       method: 'POST',
       headers,
       signal: controller.signal,

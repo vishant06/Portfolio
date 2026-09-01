@@ -15,12 +15,13 @@ import noteRoutes from './routes/noteRoutes.js';
 import playgroundRoutes from './routes/playgroundRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import codeRoutes from './routes/codeRoutes.js';
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 dotenv.config();
 
 const app = express();
-const codeRoutes = require("./routes/codeRoutes");
+
 app.set("trust proxy", 1);
 
 connectDB();

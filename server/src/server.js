@@ -15,7 +15,7 @@ import noteRoutes from './routes/noteRoutes.js';
 import playgroundRoutes from './routes/playgroundRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
-import codeRoutes from './routes/codeRoutes.js';
+
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 dotenv.config();
@@ -47,7 +47,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/playground', playgroundRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
-app.use("/api/code", codeRoutes);
+
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.originalUrl}` });

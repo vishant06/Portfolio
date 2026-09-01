@@ -14,9 +14,7 @@ export const execute = async (req, res) => {
   if (!code.trim() || code.length > MAX_CODE_LENGTH || stdin.length > MAX_INPUT_LENGTH) return res.status(400).json({
     message: 'Code or standard input is too large.'
   });
-  if ((process.env.EXECUTION_PROVIDER || 'piston').toLowerCase() !== 'piston') return res.status(503).json({
-    message: 'The configured execution provider is not supported.'
-  });
+
   const baseUrl = (process.env.PISTON_URL || '').replace(/\/$/, '');
   if (!baseUrl) return res.status(503).json({
     message: 'Code execution is not configured. Set PISTON_URL on the server.'

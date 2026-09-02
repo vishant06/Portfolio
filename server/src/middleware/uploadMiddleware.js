@@ -29,3 +29,9 @@ export const uploadResume = multer({
   fileFilter: resumeFilter,
   limits: { fileSize: 5 * 1024 * 1024 }
 });
+
+export const uploadAvatar = multer({
+  storage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 2 * 1024 * 1024 }
+});

@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { uploadUserAvatar } from '../services/cloudinaryService.js';
+import { sendVerificationEmail } from '../services/emailService.js';
 
 const signToken = (id) =>
   jwt.sign({
@@ -14,8 +16,18 @@ const publicUser = (user) => ({
   name: user.name,
   username: user.username,
   email: user.email,
-  role: user.role
+  role: user.role,
+  avatar: user.avatar && user.avatar.url ? user.avatar : null,
+  isEmailVerified: Boolean(user.isEmailVerified)
 });
+
+const createVerificationToken = () => {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const minutes = Number(process.env.EMAIL_VERIFICATION_EXPIRES_MINUTES || 60);
+  const expires = new Date(Date.now() + minutes * 60 * 1000);
+  return { rawToken, tokenHash, expires };
+};
 const cookieOptions = () => `HttpOnly; SameSite=Lax; Path=/; Max-Age=600${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
 const readCookie = (req, name) => Object.fromEntries((req.headers.cookie || '').split(';').map((item) => item.trim().split('=')))[name];
 
@@ -71,7 +83,8 @@ const getProviderProfile = async (provider, accessToken) => {
       id: profile.sub,
       email: profile.email.toLowerCase(),
       name: profile.name || profile.email.split('@')[0],
-      username: profile.email.split('@')[0]
+      username: profile.email.split('@')[0],
+      avatarUrl: profile.picture || null
     };
   }
 
@@ -98,7 +111,8 @@ const getProviderProfile = async (provider, accessToken) => {
     id: String(profile.id),
     email: email.email.toLowerCase(),
     name: profile.name || profile.login || email.email.split('@')[0],
-    username: profile.login || email.email.split('@')[0]
+    username: profile.login || email.email.split('@')[0],
+    avatarUrl: profile.avatar_url || null
   };
 };
 
@@ -146,6 +160,9 @@ export const signup = async (req, res) => {
   if (password.length < 8) return res.status(400).json({
     message: 'Password must be at least 8 characters'
   });
+  if (!req.file) return res.status(400).json({
+    message: 'A profile photo is required'
+  });
   const exists = await User.findOne({
     $or: [{
       email: email.toLowerCase()
@@ -156,15 +173,98 @@ export const signup = async (req, res) => {
   if (exists) return res.status(409).json({
     message: 'An account with that email or username already exists'
   });
+
+  let avatar;
+  try {
+    const uploaded = await uploadUserAvatar(req.file);
+    avatar = {
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id,
+      provider: 'upload'
+    };
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      message: error.message || 'Failed to upload profile photo'
+    });
+  }
+
+  const { rawToken, tokenHash, expires } = createVerificationToken();
+
   const user = await User.create({
     name,
     username,
     email,
-    password
+    password,
+    avatar,
+    isEmailVerified: false,
+    emailVerificationTokenHash: tokenHash,
+    emailVerificationExpires: expires,
+    emailVerificationLastSentAt: new Date()
   });
+
+  sendVerificationEmail(user, rawToken).catch((error) => console.error('Failed to send verification email:', error));
+
   res.status(201).json({
     token: signToken(user._id),
     user: publicUser(user)
+  });
+};
+
+export const verifyEmail = async (req, res) => {
+  const { token } = req.params;
+  if (!token) return res.status(400).json({
+    message: 'Verification token is required'
+  });
+
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const user = await User.findOne({
+    emailVerificationTokenHash: tokenHash,
+    emailVerificationExpires: { $gt: new Date() }
+  }).select('+emailVerificationTokenHash +emailVerificationExpires');
+
+  if (!user) return res.status(400).json({
+    message: 'This verification link is invalid or has expired. Please request a new one.'
+  });
+
+  user.isEmailVerified = true;
+  user.emailVerificationTokenHash = undefined;
+  user.emailVerificationExpires = undefined;
+  await user.save();
+
+  res.json({
+    message: 'Your email has been verified. You can now use your account.'
+  });
+};
+
+export const resendVerification = async (req, res) => {
+  const user = await User.findById(req.user._id).select('+emailVerificationTokenHash +emailVerificationExpires +emailVerificationLastSentAt');
+  if (!user) return res.status(404).json({
+    message: 'User account not found'
+  });
+  if (user.isEmailVerified) return res.status(400).json({
+    message: 'This email address is already verified.'
+  });
+
+  const rateLimitMinutes = Number(process.env.EMAIL_VERIFICATION_RATE_LIMIT_MINUTES || 2);
+  if (user.emailVerificationLastSentAt && Date.now() - user.emailVerificationLastSentAt.getTime() < rateLimitMinutes * 60 * 1000) {
+    return res.status(429).json({
+      message: `Please wait a couple of minutes before requesting another verification email.`
+    });
+  }
+
+  const { rawToken, tokenHash, expires } = createVerificationToken();
+  user.emailVerificationTokenHash = tokenHash;
+  user.emailVerificationExpires = expires;
+  user.emailVerificationLastSentAt = new Date();
+  await user.save();
+
+  await sendVerificationEmail(user, rawToken).catch((error) => {
+    console.error('Failed to send verification email:', error);
+    throw Object.assign(new Error('Could not send the verification email right now. Please try again shortly.'), { status: 502 });
+  });
+
+  res.json({
+    message: 'Verification email sent. Please check your inbox.'
   });
 };
 
@@ -218,6 +318,19 @@ export const oauthCallback = async (req, res, next) => {
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok || !tokenData.access_token) throw new Error('The provider could not complete sign-in');
     const profile = await getProviderProfile(provider, tokenData.access_token);
+
+    // The avatar is only refreshed from the provider when the user doesn't
+    // already have one, or when the existing one also came from this same
+    // provider — a deliberately uploaded photo is never overwritten.
+    const applyProviderAvatar = (user) => {
+      if (!profile.avatarUrl) return false;
+      const hasOwnUpload = user.avatar?.provider === 'upload' && user.avatar?.url;
+      if (hasOwnUpload || user.avatar?.url === profile.avatarUrl) return false;
+      if (user.avatar?.provider && user.avatar.provider !== provider && user.avatar?.url) return false;
+      user.avatar = { url: profile.avatarUrl, publicId: '', provider };
+      return true;
+    };
+
     let user = await User.findOne({
       providers: {
         $elemMatch: {
@@ -235,18 +348,26 @@ export const oauthCallback = async (req, res, next) => {
           provider,
           providerId: profile.id
         });
+        // The provider has already verified this email address matches the
+        // existing account, so we can trust it going forward.
+        if (!user.isEmailVerified) user.isEmailVerified = true;
+        applyProviderAvatar(user);
         await user.save();
       } else {
         user = await User.create({
           name: profile.name,
           username: await generateUsername(profile.username),
           email: profile.email,
+          isEmailVerified: true,
+          avatar: profile.avatarUrl ? { url: profile.avatarUrl, publicId: '', provider } : undefined,
           providers: [{
             provider,
             providerId: profile.id
           }]
         });
       }
+    } else if (applyProviderAvatar(user)) {
+      await user.save();
     }
     redirectWithSession(res, user);
   } catch (error) {
@@ -257,6 +378,6 @@ export const oauthCallback = async (req, res, next) => {
 
 export const me = async (req, res) => {
   res.json({
-    user: req.user
+    user: publicUser(req.user)
   });
 };

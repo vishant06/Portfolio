@@ -42,6 +42,41 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  // Profile photo. `provider` records where it came from so OAuth logins
+  // don't clobber a photo the user deliberately uploaded, and vice versa.
+  avatar: {
+    url: {
+      type: String,
+      default: ''
+    },
+    publicId: {
+      type: String,
+      default: ''
+    },
+    provider: {
+      type: String,
+      enum: ['upload', 'google', 'github', ''],
+      default: ''
+    }
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  // Never returned by default queries. Only the hash is stored; the raw
+  // token is emailed to the user and never persisted.
+  emailVerificationTokenHash: {
+    type: String,
+    select: false
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false
+  },
+  emailVerificationLastSentAt: {
+    type: Date,
+    select: false
   }
 }, {
   timestamps: true

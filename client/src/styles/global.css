@@ -335,6 +335,55 @@ textarea:focus {
   border-color: var(--accent);
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.password-toggle:hover {
+  color: var(--text);
+}
+
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar-upload-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.avatar-upload input {
+  padding: 10px 12px;
+}
+
 .notice {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -345,6 +394,20 @@ textarea:focus {
 
 .notice.error {
   color: var(--danger);
+}
+
+.notice.success {
+  color: #4ade80;
+}
+
+.badge.verified {
+  color: #4ade80;
+  border-color: color-mix(in srgb, #4ade80 40%, var(--border));
+}
+
+.badge.pending {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
 .auth-page {

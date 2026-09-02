@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import connectDB from './config/db.js';
+import User from './models/User.js';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
@@ -25,6 +26,16 @@ const app = express();
 app.set("trust proxy", 1);
 
 connectDB();
+
+// One-time, non-destructive backfill: existing Google/GitHub accounts already
+// passed their provider's verified-email check before email verification
+// existed here, so they should never be treated as "unverified". Safe to run
+// on every boot — it only ever sets the flag to true, and only for accounts
+// that already have a linked OAuth provider.
+User.updateMany(
+  { 'providers.0': { $exists: true }, isEmailVerified: { $ne: true } },
+  { $set: { isEmailVerified: true } }
+).catch((error) => console.error('OAuth email-verification backfill failed:', error));
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));

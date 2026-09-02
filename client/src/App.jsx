@@ -10,7 +10,7 @@ import Skills from './pages/Skills.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import Login from './pages/admin/Login.jsx';
 import Resume from "./pages/Resume";
-import Notes from './pages/Notes.jsx'; import NoteDetail from './pages/NoteDetail.jsx'; import Playground from './pages/Playground.jsx'; import Assistant from './pages/Assistant.jsx'; import Auth from './pages/Auth.jsx'; import OAuthCallback from './pages/OAuthCallback.jsx'; import Profile from './pages/Profile.jsx';
+import Notes from './pages/Notes.jsx'; import NoteDetail from './pages/NoteDetail.jsx'; import Playground from './pages/Playground.jsx'; import Assistant from './pages/Assistant.jsx'; import Auth from './pages/Auth.jsx'; import OAuthCallback from './pages/OAuthCallback.jsx'; import Profile from './pages/Profile.jsx'; import VerifyEmail from './pages/VerifyEmail.jsx';
 
 const App = () => (
   <Routes>
@@ -27,6 +27,7 @@ const App = () => (
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/login" element={<Auth />} /><Route path="/signup" element={<Auth signup />} />
       <Route path="/auth/callback" element={<OAuthCallback />} />
+      <Route path="/verify-email/:token" element={<VerifyEmail />} />
     </Route>
     <Route path="/admin/login" element={<Login />} />
     <Route

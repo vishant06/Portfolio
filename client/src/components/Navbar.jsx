@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { absoluteAsset } from "../services/api.js";
 import styles from "./Navbar.module.css";
 
 const links = [
@@ -89,7 +90,13 @@ export default function Navbar() {
                 aria-expanded={profileOpen}
                 aria-label="Open account menu"
               >
-                <span>{user.name?.slice(0, 1).toUpperCase()}</span>
+                <span>
+                  {user.avatar?.url ? (
+                    <img className={styles.avatarImg} src={absoluteAsset(user.avatar.url)} alt="" />
+                  ) : (
+                    user.name?.slice(0, 1).toUpperCase()
+                  )}
+                </span>
                 <ChevronDown size={15} />
               </button>
               {profileOpen && (

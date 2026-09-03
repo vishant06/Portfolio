@@ -14,6 +14,17 @@ const emptyProject = {
   image: null
 };
 
+const emptyNote = {
+  title: '',
+  description: '',
+  category: '',
+  tags: '',
+  difficulty: 'Beginner',
+  thumbnail: '',
+  content: '',
+  published: false
+};
+
 const Dashboard = () => {
   const { logout, user } = useAuth();
   const [projects, setProjects] = useState([]);
@@ -29,29 +40,38 @@ const Dashboard = () => {
   const [userEditForm, setUserEditForm] = useState({ name: '', username: '', email: '' });
   const [userStatus, setUserStatus] = useState('');
 
+  const [notes, setNotes] = useState([]);
+  const [noteForm, setNoteForm] = useState(emptyNote);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [noteStatus, setNoteStatus] = useState('');
+
   const stats = useMemo(
     () => [
       ['Projects', projects.length],
       ['Featured', projects.filter((project) => project.featured).length],
       ['Messages', messages.length],
-      ['Users', users.length]
+      ['Users', users.length],
+      ['Notes', notes.length]
     ],
-    [messages.length, projects, users.length]
+    [messages.length, projects, users.length, notes.length]
   );
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [projectData, messageData, resumeData, userData] = await Promise.all([
+      const [projectData, messageData, resumeData, userData, noteData] = await Promise.all([
         request('/projects'),
         request('/contact/messages'),
         request('/resume/latest').catch(() => null),
-        request('/admin/users').catch(() => [])
+        request('/admin/users').catch(() => []),
+        request('/notes/admin/all').catch(() => [])
       ]);
       setProjects(projectData);
       setMessages(messageData);
       setResume(resumeData);
       setUsers(userData);
+      setNotes(noteData);
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -181,6 +201,71 @@ const Dashboard = () => {
     }
   };
 
+  const updateNoteField = (event) => {
+    const { name, value, checked, type } = event.target;
+    setNoteForm((current) => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const openAddNote = () => {
+    setEditingNoteId(null);
+    setNoteForm(emptyNote);
+    setShowNoteForm(true);
+  };
+
+  const editNote = (note) => {
+    setEditingNoteId(note._id);
+    setNoteForm({
+      title: note.title,
+      description: note.description,
+      category: note.category,
+      tags: (note.tags || []).join(', '),
+      difficulty: note.difficulty || 'Beginner',
+      thumbnail: note.thumbnail || '',
+      content: note.content || '',
+      published: Boolean(note.published)
+    });
+    setShowNoteForm(true);
+  };
+
+  const cancelNoteForm = () => {
+    setShowNoteForm(false);
+    setEditingNoteId(null);
+    setNoteForm(emptyNote);
+  };
+
+  const saveNote = async (event) => {
+    event.preventDefault();
+    setNoteStatus('');
+    try {
+      if (editingNoteId) {
+        await request(`/notes/${editingNoteId}`, { method: 'PUT', body: JSON.stringify(noteForm) });
+        setNoteStatus('Note updated.');
+      } else {
+        await request('/notes', { method: 'POST', body: JSON.stringify(noteForm) });
+        setNoteStatus('Note added.');
+      }
+      cancelNoteForm();
+      loadData();
+    } catch (error) {
+      setNoteStatus(error.message);
+    }
+  };
+
+  const removeNote = async (id) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    setNoteStatus('');
+    try {
+      await request(`/notes/${id}`, { method: 'DELETE' });
+      setNoteStatus('Note deleted.');
+      loadData();
+    } catch (error) {
+      setNoteStatus(error.message);
+    }
+  };
+
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
@@ -233,140 +318,221 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <section className="panel">
-          <h2>Manage Projects</h2>
-          <div className="admin-list">
-            {projects.map((project) => (
-              <article key={project._id}>
-                <img src={absoluteAsset(project.image) || '/profile-placeholder.svg'} alt={project.title} />
-                <div><strong>{project.title}</strong><span>{project.technologies.join(', ')}</span></div>
-                <button className="btn ghost" onClick={() => editProject(project)}>Edit</button>
-                <button className="icon-btn danger" onClick={() => removeProject(project._id)} aria-label="Delete project"><Trash2 size={18} /></button>
-              </article>
-            ))}
-          </div>
-        </section>
+        <div className="admin-sections">
+          <section className="panel">
+            <h2>Manage Projects</h2>
+            <div className="admin-list">
+              {projects.map((project) => (
+                <article key={project._id}>
+                  <img src={absoluteAsset(project.image) || '/profile-placeholder.svg'} alt={project.title} />
+                  <div><strong>{project.title}</strong><span>{project.technologies.join(', ')}</span></div>
+                  <button className="btn ghost" onClick={() => editProject(project)}>Edit</button>
+                  <button className="icon-btn danger" onClick={() => removeProject(project._id)} aria-label="Delete project"><Trash2 size={18} /></button>
+                </article>
+              ))}
+            </div>
+          </section>
 
-        <section className="panel">
-          <h2>Contact Messages</h2>
-          <div className="message-list">
-            {messages.map((message) => (
-              <article key={message._id}>
-                <strong>{message.subject}</strong>
-                <span>{message.name} • {message.email}</span>
-                <p>{message.message}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+          <section className="panel">
+            <h2>Manage Users</h2>
+            {userStatus && <p className="notice">{userStatus}</p>}
+            <div className="table-scroll">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>Photo</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Provider</th>
+                    <th>Verified</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((target) => {
+                    const isEditing = editingUserId === target._id;
+                    const providerLabel = target.providers?.length
+                      ? target.providers.map((entry) => entry.provider).join(', ')
+                      : 'email';
+                    return (
+                      <tr key={target._id}>
+                        <td>
+                          <img
+                            className="user-avatar-thumb"
+                            src={absoluteAsset(target.avatar?.url) || '/profile-placeholder.svg'}
+                            alt=""
+                          />
+                        </td>
+                        <td>
+                          {isEditing ? (
+                            <input
+                              value={userEditForm.name}
+                              onChange={(event) => setUserEditForm({ ...userEditForm, name: event.target.value })}
+                            />
+                          ) : (
+                            target.name
+                          )}
+                        </td>
+                        <td>
+                          {isEditing ? (
+                            <input
+                              value={userEditForm.username}
+                              onChange={(event) => setUserEditForm({ ...userEditForm, username: event.target.value })}
+                            />
+                          ) : (
+                            `@${target.username}`
+                          )}
+                        </td>
+                        <td>
+                          {isEditing ? (
+                            <input
+                              type="email"
+                              value={userEditForm.email}
+                              onChange={(event) => setUserEditForm({ ...userEditForm, email: event.target.value })}
+                            />
+                          ) : (
+                            target.email
+                          )}
+                        </td>
+                        <td><span className="badge">{target.role}</span></td>
+                        <td>{providerLabel}</td>
+                        <td>
+                          <span className={`badge ${target.isEmailVerified ? 'verified' : 'pending'}`}>
+                            {target.isEmailVerified ? 'Verified' : 'Pending'}
+                          </span>
+                        </td>
+                        <td>{new Date(target.createdAt).toLocaleDateString()}</td>
+                        <td className="user-actions">
+                          {isEditing ? (
+                            <>
+                              <button className="icon-btn" onClick={() => saveEditUser(target._id)} aria-label="Save user"><Check size={16} /></button>
+                              <button className="icon-btn" onClick={cancelEditUser} aria-label="Cancel edit"><X size={16} /></button>
+                            </>
+                          ) : (
+                            <>
+                              <button className="icon-btn" onClick={() => startEditUser(target)} aria-label="Edit user"><Pencil size={16} /></button>
+                              {target.role === 'admin' ? (
+                                <button className="btn ghost small" onClick={() => changeUserRole(target, 'user')}><ShieldOff size={14} /> Make User</button>
+                              ) : (
+                                <button className="btn ghost small" onClick={() => changeUserRole(target, 'admin')}><ShieldCheck size={14} /> Make Admin</button>
+                              )}
+                              <button
+                                className="icon-btn danger"
+                                onClick={() => removeUser(target._id)}
+                                aria-label="Delete user"
+                                disabled={target._id === user?.id}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-        <section className="panel">
-          <h2>Users</h2>
-          {userStatus && <p className="notice">{userStatus}</p>}
-          <div className="table-scroll">
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th>Photo</th>
-                  <th>Name</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Provider</th>
-                  <th>Verified</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((target) => {
-                  const isEditing = editingUserId === target._id;
-                  const providerLabel = target.providers?.length
-                    ? target.providers.map((entry) => entry.provider).join(', ')
-                    : 'email';
-                  return (
-                    <tr key={target._id}>
+          <section className="panel">
+            <div className="section-title-row">
+              <h2>Manage Notes</h2>
+              {!showNoteForm && (
+                <button className="btn primary small" onClick={openAddNote}><Plus size={16} /> Add Note</button>
+              )}
+            </div>
+            {noteStatus && <p className="notice">{noteStatus}</p>}
+
+            {showNoteForm && (
+              <form className="form note-admin-form" onSubmit={saveNote}>
+                <h3>{editingNoteId ? 'Edit Note' : 'Add Note'}</h3>
+                <label>Title<input name="title" value={noteForm.title} onChange={updateNoteField} required /></label>
+                <label>Description<textarea name="description" value={noteForm.description} onChange={updateNoteField} maxLength={500} required /></label>
+                <div className="form-grid">
+                  <label>Category<input name="category" value={noteForm.category} onChange={updateNoteField} placeholder="Java, React, DSA..." required /></label>
+                  <label>
+                    Difficulty
+                    <select name="difficulty" value={noteForm.difficulty} onChange={updateNoteField}>
+                      <option>Beginner</option>
+                      <option>Intermediate</option>
+                      <option>Advanced</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Tags<input name="tags" value={noteForm.tags} onChange={updateNoteField} placeholder="loops, arrays, basics" /></label>
+                <label>Thumbnail URL<input name="thumbnail" value={noteForm.thumbnail} onChange={updateNoteField} placeholder="https://..." /></label>
+                <label>Content<textarea name="content" className="note-content-field" value={noteForm.content} onChange={updateNoteField} required /></label>
+                <label className="checkbox"><input name="published" type="checkbox" checked={noteForm.published} onChange={updateNoteField} /> Published (visible on the public Notes page)</label>
+                <div className="actions">
+                  <button className="btn primary"><Plus size={18} /> {editingNoteId ? 'Save Changes' : 'Add Note'}</button>
+                  <button type="button" className="btn ghost" onClick={cancelNoteForm}>Cancel</button>
+                </div>
+              </form>
+            )}
+
+            <div className="table-scroll">
+              <table className="notes-table">
+                <thead>
+                  <tr>
+                    <th>Note</th>
+                    <th>Category</th>
+                    <th>Author</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {notes.map((note) => (
+                    <tr key={note._id}>
                       <td>
-                        <img
-                          className="user-avatar-thumb"
-                          src={absoluteAsset(target.avatar?.url) || '/profile-placeholder.svg'}
-                          alt=""
-                        />
+                        <div className="note-title-cell">
+                          <img className="user-avatar-thumb" src={absoluteAsset(note.thumbnail) || '/profile-placeholder.svg'} alt="" />
+                          <span>{note.title}</span>
+                        </div>
                       </td>
+                      <td>{note.category}</td>
+                      <td>{note.author?.name || '—'}</td>
                       <td>
-                        {isEditing ? (
-                          <input
-                            value={userEditForm.name}
-                            onChange={(event) => setUserEditForm({ ...userEditForm, name: event.target.value })}
-                          />
-                        ) : (
-                          target.name
-                        )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <input
-                            value={userEditForm.username}
-                            onChange={(event) => setUserEditForm({ ...userEditForm, username: event.target.value })}
-                          />
-                        ) : (
-                          `@${target.username}`
-                        )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <input
-                            type="email"
-                            value={userEditForm.email}
-                            onChange={(event) => setUserEditForm({ ...userEditForm, email: event.target.value })}
-                          />
-                        ) : (
-                          target.email
-                        )}
-                      </td>
-                      <td><span className="badge">{target.role}</span></td>
-                      <td>{providerLabel}</td>
-                      <td>
-                        <span className={`badge ${target.isEmailVerified ? 'verified' : 'pending'}`}>
-                          {target.isEmailVerified ? 'Verified' : 'Pending'}
+                        <span className={`badge ${note.published ? 'verified' : 'pending'}`}>
+                          {note.published ? 'Published' : 'Draft'}
                         </span>
                       </td>
-                      <td>{new Date(target.createdAt).toLocaleDateString()}</td>
+                      <td>{new Date(note.createdAt).toLocaleDateString()}</td>
+                      <td>{new Date(note.updatedAt).toLocaleDateString()}</td>
                       <td className="user-actions">
-                        {isEditing ? (
-                          <>
-                            <button className="icon-btn" onClick={() => saveEditUser(target._id)} aria-label="Save user"><Check size={16} /></button>
-                            <button className="icon-btn" onClick={cancelEditUser} aria-label="Cancel edit"><X size={16} /></button>
-                          </>
-                        ) : (
-                          <>
-                            <button className="icon-btn" onClick={() => startEditUser(target)} aria-label="Edit user"><Pencil size={16} /></button>
-                            {target.role === 'admin' ? (
-                              <button className="btn ghost small" onClick={() => changeUserRole(target, 'user')}><ShieldOff size={14} /> Make User</button>
-                            ) : (
-                              <button className="btn ghost small" onClick={() => changeUserRole(target, 'admin')}><ShieldCheck size={14} /> Make Admin</button>
-                            )}
-                            <button
-                              className="icon-btn danger"
-                              onClick={() => removeUser(target._id)}
-                              aria-label="Delete user"
-                              disabled={target._id === user?.id}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </>
-                        )}
+                        <button className="icon-btn" onClick={() => editNote(note)} aria-label="Edit note"><Pencil size={16} /></button>
+                        <button className="icon-btn danger" onClick={() => removeNote(note._id)} aria-label="Delete note"><Trash2 size={16} /></button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Manage Emails</h2>
+            <div className="message-list">
+              {messages.map((message) => (
+                <article key={message._id}>
+                  <strong>{message.subject}</strong>
+                  <span>{message.name} • {message.email}</span>
+                  <p>{message.message}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
       </section>
     </main>
   );
 };
 
 export default Dashboard;
+

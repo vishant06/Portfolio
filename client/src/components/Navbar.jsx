@@ -16,6 +16,7 @@ import styles from "./Navbar.module.css";
 
 const links = [
   ["Home", "/"],
+  ["Notes", "/notes"],
   ["Projects", "/projects"],
   ["Playground", "/playground"],
   ["AI", "/ai"],

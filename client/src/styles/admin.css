@@ -153,25 +153,48 @@
   border-radius: 8px;
 }
 
+.admin-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: 24px;
+}
+
+.admin-sections .panel {
+  margin: 0;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .table-scroll {
   overflow-x: auto;
 }
 
-.users-table {
+.users-table,
+.notes-table {
   width: 100%;
   min-width: 780px;
   border-collapse: collapse;
 }
 
 .users-table th,
-.users-table td {
+.users-table td,
+.notes-table th,
+.notes-table td {
   padding: 10px 12px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
 
-.users-table th {
+.users-table th,
+.notes-table th {
   color: var(--muted);
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -204,6 +227,35 @@
   font-size: 0.82rem;
 }
 
+.notes-table td input,
+.notes-table td select {
+  padding: 8px 10px;
+  min-width: 120px;
+}
+
+.note-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.note-title-cell .user-avatar-thumb {
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.note-admin-form {
+  margin: 16px 0 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.note-content-field {
+  min-height: 220px;
+  font-family: inherit;
+}
+
 .icon-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -232,7 +284,12 @@
     grid-template-columns: 64px 1fr;
   }
 
-  .users-table {
+  .users-table,
+  .notes-table {
     min-width: 640px;
+  }
+
+  .admin-sections {
+    gap: 22px;
   }
 }

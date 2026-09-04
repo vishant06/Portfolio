@@ -1,4 +1,5 @@
 import { AlertTriangle, Info, Lightbulb, ShieldAlert } from 'lucide-react';
+import { renderInlineMarkdown } from './inlineMarkdown.jsx';
 
 const CONFIG = {
   note: { label: 'Note', icon: Info },
@@ -15,7 +16,7 @@ export default function CalloutBlock({ calloutType = 'note', content = '' }) {
       <div className="note-callout-heading">
         <Icon size={16} /> {label}
       </div>
-      <p>{content}</p>
+      <p>{renderInlineMarkdown(content, 'callout')}</p>
     </div>
   );
 }

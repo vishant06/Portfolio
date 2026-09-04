@@ -1,7 +1,8 @@
 import { Bot, Plus, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import CodeBlock from "../components/notes/CodeBlock.jsx";
-import { CODE_LANGUAGE_LABELS } from "../components/notes/blockTypes.js";
+import { normalizeLanguage } from "../components/notes/blockTypes.js";
+import { renderInlineMarkdown as renderInline } from "../components/notes/inlineMarkdown.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import request, { absoluteAsset } from "../services/api.js";
 import "../styles/notes-blocks.css";
@@ -14,57 +15,6 @@ const welcome = {
     "Hi — I’m your developer learning assistant. Ask me about React, JavaScript, Node.js, MongoDB, debugging, or paste code to examine.",
   time: now(),
 };
-
-// Maps common fence-language shorthands (```js, ```py, ```sh...) onto the
-// canonical keys the syntax highlighter actually registers.
-const LANGUAGE_ALIASES = {
-  js: "javascript",
-  jsx: "javascript",
-  mjs: "javascript",
-  node: "javascript",
-  ts: "typescript",
-  tsx: "typescript",
-  py: "python",
-  "c++": "cpp",
-  cplusplus: "cpp",
-  "c#": "csharp",
-  cs: "csharp",
-  sh: "bash",
-  zsh: "bash",
-  xml: "html",
-  rs: "rust",
-  golang: "go",
-  text: "other",
-  plaintext: "other",
-  plain: "other",
-};
-
-const normalizeLanguage = (lang) => {
-  const key = (lang || "").trim().toLowerCase();
-  if (!key) return "javascript";
-  if (Object.prototype.hasOwnProperty.call(CODE_LANGUAGE_LABELS, key)) return key;
-  return LANGUAGE_ALIASES[key] || "other";
-};
-
-// Small, safe inline formatter — bold (**text**) and inline code (`code`).
-// Never touches raw HTML, so nothing here can execute injected markup.
-const renderInline = (text, keyPrefix) =>
-  text
-    .split(/(\*\*.+?\*\*|`[^`]+`)/g)
-    .filter(Boolean)
-    .map((part, index) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={`${keyPrefix}-${index}`}>{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith("`") && part.endsWith("`")) {
-        return (
-          <code key={`${keyPrefix}-${index}`} className="inline-code">
-            {part.slice(1, -1)}
-          </code>
-        );
-      }
-      return <span key={`${keyPrefix}-${index}`}>{part}</span>;
-    });
 
 // Turns a plain-text segment into paragraphs / bullet lists / numbered
 // lists / light headings, applying inline formatting along the way.

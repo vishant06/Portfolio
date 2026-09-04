@@ -1,3 +1,5 @@
+import { renderInlineMarkdown } from './inlineMarkdown.jsx';
+
 export default function ListBlock({ ordered = false, items = [] }) {
   const visibleItems = (items || []).filter((item) => item && item.trim());
   if (visibleItems.length === 0) return null;
@@ -5,7 +7,7 @@ export default function ListBlock({ ordered = false, items = [] }) {
   return (
     <Tag className="note-block-list">
       {visibleItems.map((item, index) => (
-        <li key={index}>{item}</li>
+        <li key={index}>{renderInlineMarkdown(item, `list-${index}`)}</li>
       ))}
     </Tag>
   );

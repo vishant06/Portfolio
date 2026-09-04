@@ -1,9 +1,9 @@
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown, FileUp, Plus } from 'lucide-react';
 import { useState } from 'react';
 import BlockEditorItem from './BlockEditorItem.jsx';
 import { BLOCK_TYPES, createBlock } from './blockTypes.js';
 
-export default function BlockEditor({ blocks, onChange }) {
+export default function BlockEditor({ blocks, onChange, onBulkImportClick }) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const addBlock = (type) => {
@@ -55,18 +55,26 @@ export default function BlockEditor({ blocks, onChange }) {
         />
       ))}
 
-      <div className="block-add-wrap">
-        <button type="button" className="btn ghost" onClick={() => setPickerOpen((value) => !value)}>
-          <Plus size={16} /> Add Block <ChevronDown size={14} />
-        </button>
-        {pickerOpen && (
-          <div className="block-add-menu" role="menu">
-            {BLOCK_TYPES.map(({ type, label }) => (
-              <button type="button" key={type} onClick={() => addBlock(type)} role="menuitem">
-                {label}
-              </button>
-            ))}
-          </div>
+      <div className="block-editor-toolbar">
+        <div className="block-add-wrap">
+          <button type="button" className="btn ghost" onClick={() => setPickerOpen((value) => !value)}>
+            <Plus size={16} /> Add Block <ChevronDown size={14} />
+          </button>
+          {pickerOpen && (
+            <div className="block-add-menu" role="menu">
+              {BLOCK_TYPES.map(({ type, label }) => (
+                <button type="button" key={type} onClick={() => addBlock(type)} role="menuitem">
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {onBulkImportClick && (
+          <button type="button" className="btn ghost" onClick={onBulkImportClick}>
+            <FileUp size={16} /> Bulk Import
+          </button>
         )}
       </div>
     </div>

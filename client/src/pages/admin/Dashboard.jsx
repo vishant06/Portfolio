@@ -1,6 +1,7 @@
 import { Check, Eye, EyeOff, LogOut, Pencil, Plus, RefreshCw, ShieldCheck, ShieldOff, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import BlockEditor from '../../components/notes/BlockEditor.jsx';
+import BulkImportModal from '../../components/notes/BulkImportModal.jsx';
 import { cleanBlocks, legacyToBlocks } from '../../components/notes/blockTypes.js';
 import NoteRenderer from '../../components/notes/NoteRenderer.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -49,6 +50,7 @@ const Dashboard = () => {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [showNotePreview, setShowNotePreview] = useState(true);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [noteStatus, setNoteStatus] = useState('');
 
   const stats = useMemo(
@@ -488,7 +490,11 @@ const Dashboard = () => {
                 <div className={showNotePreview ? 'note-editor-layout' : ''}>
                   <div>
                     <span className="block-editor-section-label">Content</span>
-                    <BlockEditor blocks={noteForm.blocks} onChange={(blocks) => setNoteForm({ ...noteForm, blocks })} />
+                    <BlockEditor
+                      blocks={noteForm.blocks}
+                      onChange={(blocks) => setNoteForm({ ...noteForm, blocks })}
+                      onBulkImportClick={() => setShowBulkImport(true)}
+                    />
                   </div>
 
                   {showNotePreview && (
@@ -573,6 +579,17 @@ const Dashboard = () => {
           </section>
         </div>
       </section>
+
+      {showBulkImport && (
+        <BulkImportModal
+          onClose={() => setShowBulkImport(false)}
+          onImport={(imported) => {
+            setNoteForm((current) => ({ ...current, blocks: [...current.blocks, ...imported] }));
+            setShowBulkImport(false);
+            setNoteStatus(`Imported ${imported.length} block${imported.length === 1 ? '' : 's'} — review them below, then save.`);
+          }}
+        />
+      )}
     </main>
   );
 };

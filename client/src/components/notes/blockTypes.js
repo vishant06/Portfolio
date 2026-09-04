@@ -36,6 +36,41 @@ export const CODE_LANGUAGE_LABELS = {
 
 export const CALLOUT_TYPES = ['note', 'important', 'tip', 'warning'];
 
+// Maps common shorthands (```js, ```py, ```sh, GFM alert tags...) onto the
+// canonical keys above. Shared by the AI chat renderer and the Markdown
+// bulk-import parser so language detection behaves identically everywhere.
+const LANGUAGE_ALIASES = {
+  js: 'javascript',
+  jsx: 'javascript',
+  mjs: 'javascript',
+  node: 'javascript',
+  ts: 'typescript',
+  tsx: 'typescript',
+  py: 'python',
+  py3: 'python',
+  'c++': 'cpp',
+  cplusplus: 'cpp',
+  'c#': 'csharp',
+  cs: 'csharp',
+  sh: 'bash',
+  zsh: 'bash',
+  xml: 'html',
+  rs: 'rust',
+  golang: 'go',
+  yml: 'other',
+  yaml: 'other',
+  text: 'other',
+  plaintext: 'other',
+  plain: 'other'
+};
+
+export const normalizeLanguage = (lang) => {
+  const key = String(lang || '').trim().toLowerCase();
+  if (!key) return 'javascript';
+  if (Object.prototype.hasOwnProperty.call(CODE_LANGUAGE_LABELS, key)) return key;
+  return LANGUAGE_ALIASES[key] || 'other';
+};
+
 export const createBlock = (type) => {
   switch (type) {
     case 'heading':

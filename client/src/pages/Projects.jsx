@@ -18,8 +18,8 @@ const Projects = () => {
 
   return (
     <section>
-      <SectionHeader eyebrow="Projects" title="Projects I've worked on">
-        Projects are managed through the admin dashboard.
+      <SectionHeader eyebrow="Projects" title="MongoDB-powered project showcase">
+        Projects are fetched dynamically from the backend and managed through the admin dashboard.
       </SectionHeader>
       {loading && <Loader label="Loading projects" />}
       {error && <p className="notice error">{error}</p>}

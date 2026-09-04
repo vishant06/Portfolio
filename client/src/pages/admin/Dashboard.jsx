@@ -1,8 +1,12 @@
-import { Check, LogOut, Pencil, Plus, RefreshCw, ShieldCheck, ShieldOff, Trash2, Upload, X } from 'lucide-react';
+import { Check, Eye, EyeOff, LogOut, Pencil, Plus, RefreshCw, ShieldCheck, ShieldOff, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import BlockEditor from '../../components/notes/BlockEditor.jsx';
+import { cleanBlocks, legacyToBlocks } from '../../components/notes/blockTypes.js';
+import NoteRenderer from '../../components/notes/NoteRenderer.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import request, { absoluteAsset } from '../../services/api.js';
 import '../../styles/admin.css';
+import '../../styles/notes-blocks.css';
 
 const emptyProject = {
   title: '',
@@ -21,8 +25,8 @@ const emptyNote = {
   tags: '',
   difficulty: 'Beginner',
   thumbnail: '',
-  content: '',
-  published: false
+  published: false,
+  blocks: []
 };
 
 const Dashboard = () => {
@@ -44,6 +48,7 @@ const Dashboard = () => {
   const [noteForm, setNoteForm] = useState(emptyNote);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [showNoteForm, setShowNoteForm] = useState(false);
+  const [showNotePreview, setShowNotePreview] = useState(true);
   const [noteStatus, setNoteStatus] = useState('');
 
   const stats = useMemo(
@@ -211,40 +216,49 @@ const Dashboard = () => {
 
   const openAddNote = () => {
     setEditingNoteId(null);
-    setNoteForm(emptyNote);
+    setNoteForm({ ...emptyNote, blocks: [] });
     setShowNoteForm(true);
   };
 
-  const editNote = (note) => {
-    setEditingNoteId(note._id);
-    setNoteForm({
-      title: note.title,
-      description: note.description,
-      category: note.category,
-      tags: (note.tags || []).join(', '),
-      difficulty: note.difficulty || 'Beginner',
-      thumbnail: note.thumbnail || '',
-      content: note.content || '',
-      published: Boolean(note.published)
-    });
-    setShowNoteForm(true);
+  const editNote = async (note) => {
+    setNoteStatus('');
+    try {
+      // The notes list doesn't include blocks/content (kept light on
+      // purpose), so fetch the full note before opening the editor.
+      const full = await request(`/notes/admin/${note._id}`);
+      setEditingNoteId(full._id);
+      setNoteForm({
+        title: full.title,
+        description: full.description,
+        category: full.category,
+        tags: (full.tags || []).join(', '),
+        difficulty: full.difficulty || 'Beginner',
+        thumbnail: full.thumbnail || '',
+        published: Boolean(full.published),
+        blocks: full.blocks?.length ? full.blocks : legacyToBlocks(full)
+      });
+      setShowNoteForm(true);
+    } catch (error) {
+      setNoteStatus(error.message);
+    }
   };
 
   const cancelNoteForm = () => {
     setShowNoteForm(false);
     setEditingNoteId(null);
-    setNoteForm(emptyNote);
+    setNoteForm({ ...emptyNote, blocks: [] });
   };
 
   const saveNote = async (event) => {
     event.preventDefault();
     setNoteStatus('');
+    const payload = { ...noteForm, blocks: cleanBlocks(noteForm.blocks) };
     try {
       if (editingNoteId) {
-        await request(`/notes/${editingNoteId}`, { method: 'PUT', body: JSON.stringify(noteForm) });
+        await request(`/notes/${editingNoteId}`, { method: 'PUT', body: JSON.stringify(payload) });
         setNoteStatus('Note updated.');
       } else {
-        await request('/notes', { method: 'POST', body: JSON.stringify(noteForm) });
+        await request('/notes', { method: 'POST', body: JSON.stringify(payload) });
         setNoteStatus('Note added.');
       }
       cancelNoteForm();
@@ -449,7 +463,12 @@ const Dashboard = () => {
 
             {showNoteForm && (
               <form className="form note-admin-form" onSubmit={saveNote}>
-                <h3>{editingNoteId ? 'Edit Note' : 'Add Note'}</h3>
+                <div className="section-title-row">
+                  <h3>{editingNoteId ? 'Edit Note' : 'Add Note'}</h3>
+                  <button type="button" className="btn ghost small" onClick={() => setShowNotePreview((value) => !value)}>
+                    {showNotePreview ? <EyeOff size={14} /> : <Eye size={14} />} {showNotePreview ? 'Hide Preview' : 'Show Preview'}
+                  </button>
+                </div>
                 <label>Title<input name="title" value={noteForm.title} onChange={updateNoteField} required /></label>
                 <label>Description<textarea name="description" value={noteForm.description} onChange={updateNoteField} maxLength={500} required /></label>
                 <div className="form-grid">
@@ -465,7 +484,31 @@ const Dashboard = () => {
                 </div>
                 <label>Tags<input name="tags" value={noteForm.tags} onChange={updateNoteField} placeholder="loops, arrays, basics" /></label>
                 <label>Thumbnail URL<input name="thumbnail" value={noteForm.thumbnail} onChange={updateNoteField} placeholder="https://..." /></label>
-                <label>Content<textarea name="content" className="note-content-field" value={noteForm.content} onChange={updateNoteField} required /></label>
+
+                <div className={showNotePreview ? 'note-editor-layout' : ''}>
+                  <div>
+                    <span className="block-editor-section-label">Content</span>
+                    <BlockEditor blocks={noteForm.blocks} onChange={(blocks) => setNoteForm({ ...noteForm, blocks })} />
+                  </div>
+
+                  {showNotePreview && (
+                    <div className="note-editor-preview">
+                      <span className="eyebrow">Live Preview — this is exactly how the note will look</span>
+                      {noteForm.title || noteForm.blocks.length > 0 ? (
+                        <>
+                          <h1>{noteForm.title || 'Untitled note'}</h1>
+                          {noteForm.description && <p className="lead">{noteForm.description}</p>}
+                          <div className="note-reader-body">
+                            <NoteRenderer note={{ ...noteForm, blocks: cleanBlocks(noteForm.blocks) }} />
+                          </div>
+                        </>
+                      ) : (
+                        <p className="note-editor-preview-empty">Start adding a title and blocks to see a live preview.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <label className="checkbox"><input name="published" type="checkbox" checked={noteForm.published} onChange={updateNoteField} /> Published (visible on the public Notes page)</label>
                 <div className="actions">
                   <button className="btn primary"><Plus size={18} /> {editingNoteId ? 'Save Changes' : 'Add Note'}</button>

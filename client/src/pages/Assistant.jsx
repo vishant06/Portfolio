@@ -12,7 +12,7 @@ const now = () => new Date().toISOString();
 const welcome = {
   role: "assistant",
   content:
-    "Hi — I’m your developer learning assistant. Ask me about React, JavaScript, Node.js, MongoDB, debugging, or paste code to examine.",
+    "Hi — I’m your developer learning assistant. Ask me...",
   time: now(),
 };
 
@@ -237,7 +237,7 @@ export default function Assistant() {
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={keyDown}
-            placeholder="Ask about React, JavaScript, MongoDB, or paste code…"
+            placeholder="Write a message..."
             aria-label="Message AI assistant"
             disabled={loading}
           />

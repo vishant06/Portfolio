@@ -335,7 +335,7 @@ export default function Assistant() {
 
         <div className="assistant-controls">
           <button type="button" className="btn ghost" onClick={clear}>
-            <Plus size={16} /> New chat
+            <Plus size={16} /> new
           </button>
           <button
             type="button"
@@ -344,7 +344,7 @@ export default function Assistant() {
             disabled={saving || messages.every((message) => message.isWelcome)}
             title="Save this conversation"
           >
-            <Save size={16} /> {saving ? "Saving..." : "Save Chat"}
+            <Save size={16} /> {saving ? "Saving..." : "save"}
           </button>
           <button
             type="button"

@@ -54,7 +54,7 @@ export default function Navbar() {
           onClick={closeMenu}
           aria-label="VK home"
         >
-          <img src="Interlocking 'BWV' Monogram Logo on Charcoal Background.png" alt="VK" />
+          <img src="https://res.cloudinary.com/dnx9p4ztk/image/upload/v1788552079/Interlocking_BWV_Monogram_Logo_on_Charcoal_Background_tukrum.png" alt="VK" />
         </NavLink>
         <div className={`${styles.centerLinks} ${menuOpen ? styles.open : ""}`}>
           {links.map(([label, path]) => (

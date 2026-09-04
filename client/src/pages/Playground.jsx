@@ -3,7 +3,8 @@ import {
   Check,
   Copy,
   Download,
-  Expand,
+  Minimize2,
+  Maximize2,
   Play,
   RotateCcw,
   Save,
@@ -115,6 +116,10 @@ export default function Playground() {
   const [livePreview, setLivePreview] = useState(false);
   const [status, setStatus] = useState("");
   const [copied, setCopied] = useState(false);
+  // True toggle state for Fit to Screen — a plain boolean, flipped with
+  // `!isFitToScreen` on every click, so it can go ON -> OFF -> ON
+  // indefinitely without drifting from the real layout state.
+  const [isFitToScreen, setIsFitToScreen] = useState(false);
   const shellRef = useRef(null);
   const isWeb = language === "web";
   const currentCode = isWeb ? code[file] : singleCode;
@@ -312,6 +317,41 @@ export default function Playground() {
       setStatus(error.message);
     }
   };
+  // Keeps the toggle honest if the user exits fullscreen by pressing
+  // Escape (or any other way the browser allows) instead of clicking the
+  // button — otherwise the button would get stuck showing "Exit Fit".
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) setIsFitToScreen(false);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  const toggleFitToScreen = async () => {
+    const next = !isFitToScreen;
+
+    if (next) {
+      try {
+        await shellRef.current?.requestFullscreen?.();
+      } catch (_error) {
+        // Fullscreen API unavailable/denied (some mobile browsers, some
+        // iframed contexts) — fall back to the CSS-only fit-to-screen
+        // layout below instead of leaving the button stuck.
+      }
+    } else if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (_error) {
+        // Ignore — state is still flipped below.
+      }
+    }
+
+    setIsFitToScreen(next);
+    // Let the editor/output panels pick up the new dimensions.
+    window.dispatchEvent(new Event("resize"));
+  };
+
   const copy = async () => {
     await navigator.clipboard.writeText(currentCode);
     setCopied(true);
@@ -349,7 +389,7 @@ export default function Playground() {
           {isWeb ? "Browser runtime ready" : "Compiler not configured"}
         </span>
       </div>
-      <div className="playground-shell" ref={shellRef}>
+      <div className={"playground-shell" + (isFitToScreen ? " fit-to-screen" : "")} ref={shellRef}>
         <header className="play-toolbar">
           <div className="play-actions">
             <button className="btn primary" onClick={run} disabled={running}>
@@ -397,11 +437,12 @@ export default function Playground() {
               <Download size={17} />
             </button>
             <button
-              className="tool-button"
-              onClick={() => shellRef.current?.requestFullscreen?.()}
-              title="Full screen"
+              className={"tool-button" + (isFitToScreen ? " active" : "")}
+              onClick={toggleFitToScreen}
+              title={isFitToScreen ? "Exit fit to screen" : "Fit to screen"}
+              aria-pressed={isFitToScreen}
             >
-              <Expand size={17} />
+              {isFitToScreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
             </button>
             <button className="btn ghost" onClick={save}>
               <Save size={16} /> Save
@@ -481,6 +522,7 @@ export default function Playground() {
                 lineNumbers: "on",
                 wordWrap: "on",
                 padding: { top: 16 },
+                automaticLayout: true,
               }}
             />
           </div>

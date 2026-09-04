@@ -4,6 +4,7 @@ import cloudinary from '../config/cloudinary.js';
 const PROJECTS_FOLDER = 'portfolio/projects';
 const RESUMES_FOLDER = 'portfolio/resumes';
 const USERS_FOLDER = 'portfolio/users';
+const NOTES_FOLDER = 'portfolio/notes';
 
 const assertCloudinaryConfigured = () => {
   const required = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
@@ -50,6 +51,19 @@ export const uploadUserAvatar = async (file) => {
 
   return uploadBuffer(file.buffer, {
     folder: USERS_FOLDER,
+    resource_type: 'image'
+  });
+};
+
+export const uploadNoteThumbnail = async (file) => {
+  if (!file?.buffer) {
+    const error = new Error('Thumbnail image file is required');
+    error.status = 400;
+    throw error;
+  }
+
+  return uploadBuffer(file.buffer, {
+    folder: NOTES_FOLDER,
     resource_type: 'image'
   });
 };

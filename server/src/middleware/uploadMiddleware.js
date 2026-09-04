@@ -24,6 +24,12 @@ export const uploadProjectImage = multer({
   limits: { fileSize: 3 * 1024 * 1024 }
 });
 
+export const uploadNoteThumbnail = multer({
+  storage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 3 * 1024 * 1024 }
+});
+
 export const uploadResume = multer({
   storage,
   fileFilter: resumeFilter,

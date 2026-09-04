@@ -52,6 +52,7 @@ const Dashboard = () => {
   const [showNotePreview, setShowNotePreview] = useState(true);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [noteStatus, setNoteStatus] = useState('');
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
 
   const stats = useMemo(
     () => [
@@ -250,6 +251,27 @@ const Dashboard = () => {
     setEditingNoteId(null);
     setNoteForm({ ...emptyNote, blocks: [] });
   };
+
+  const uploadThumbnail = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const payload = new FormData();
+    payload.append('thumbnail', file);
+    setThumbnailUploading(true);
+    setNoteStatus('');
+    try {
+      const data = await request('/notes/admin/thumbnail', { method: 'POST', body: payload });
+      setNoteForm((current) => ({ ...current, thumbnail: data.url }));
+      setNoteStatus('Thumbnail uploaded.');
+    } catch (error) {
+      setNoteStatus(error.message);
+    } finally {
+      setThumbnailUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const removeThumbnail = () => setNoteForm((current) => ({ ...current, thumbnail: '' }));
 
   const saveNote = async (event) => {
     event.preventDefault();
@@ -485,7 +507,27 @@ const Dashboard = () => {
                   </label>
                 </div>
                 <label>Tags<input name="tags" value={noteForm.tags} onChange={updateNoteField} placeholder="loops, arrays, basics" /></label>
-                <label>Thumbnail URL<input name="thumbnail" value={noteForm.thumbnail} onChange={updateNoteField} placeholder="https://..." /></label>
+                <div className="thumbnail-label">
+                  <span>Thumbnail</span>
+                  <div className="thumbnail-field">
+                    {noteForm.thumbnail ? (
+                      <img className="thumbnail-field-preview" src={absoluteAsset(noteForm.thumbnail)} alt="" />
+                    ) : (
+                      <span className="thumbnail-field-empty">No image selected</span>
+                    )}
+                    <div className="thumbnail-field-actions">
+                      <label className="btn ghost">
+                        <Upload size={15} /> {thumbnailUploading ? 'Uploading...' : noteForm.thumbnail ? 'Replace image' : 'Upload image'}
+                        <input type="file" accept="image/*" hidden onChange={uploadThumbnail} disabled={thumbnailUploading} />
+                      </label>
+                      {noteForm.thumbnail && (
+                        <button type="button" className="btn ghost" onClick={removeThumbnail} disabled={thumbnailUploading}>
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 <div className={showNotePreview ? 'note-editor-layout' : ''}>
                   <div>

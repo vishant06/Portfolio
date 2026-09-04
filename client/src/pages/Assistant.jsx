@@ -1,4 +1,4 @@
-import { Bot, Plus, Send, User } from "lucide-react";
+import { Bot, Check, Maximize2, Minimize2, Pencil, Plus, Save, Send, Trash2, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import CodeBlock from "../components/notes/CodeBlock.jsx";
 import { normalizeLanguage } from "../components/notes/blockTypes.js";
@@ -14,6 +14,7 @@ const welcome = {
   content:
     "Hi — I’m your developer learning assistant. Ask me...",
   time: now(),
+  isWelcome: true,
 };
 
 // Turns a plain-text segment into paragraphs / bullet lists / numbered
@@ -117,6 +118,18 @@ export default function Assistant() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Saved-conversations state.
+  const [savedChats, setSavedChats] = useState([]);
+  const [conversationId, setConversationId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  // Fullscreen state — kept independent of any other page-level toggle
+  // (e.g. the Playground's Fit to Screen) so the two never interfere.
+  const [isChatFullscreen, setIsChatFullscreen] = useState(false);
+
   const end = useRef(null);
 
   useEffect(() => {
@@ -125,10 +138,129 @@ export default function Assistant() {
     }
   }, [messages, loading]);
 
+  const loadSavedChats = () => {
+    if (!isAuthenticated) return;
+    request("/ai/conversations")
+      .then(setSavedChats)
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedChats([]);
+      return;
+    }
+    loadSavedChats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  // Exit fullscreen with Escape, and keep the toggle in sync if the user
+  // navigates away or reloads mid-fullscreen.
+  useEffect(() => {
+    if (!isChatFullscreen) return;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setIsChatFullscreen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.classList.add("chat-fullscreen-lock");
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.classList.remove("chat-fullscreen-lock");
+    };
+  }, [isChatFullscreen]);
+
   const clear = () => {
     setMessages([{ ...welcome, time: now() }]);
     setText("");
     setLoading(false);
+    setConversationId(null);
+  };
+
+  // "Save Chat" — creates a new saved conversation on first save, then
+  // updates the same record on every save after that (renaming keeps
+  // working the same way once a conversation exists).
+  const saveChat = async () => {
+    if (!isAuthenticated) {
+      setMessages((items) => [
+        ...items,
+        { role: "assistant", content: "Please login to save conversations.", time: now() },
+      ]);
+      return;
+    }
+
+    const toSave = messages.filter((message) => !message.isWelcome);
+    if (!toSave.length) return;
+
+    setSaving(true);
+    try {
+      if (conversationId) {
+        const updated = await request(`/ai/conversations/${conversationId}`, {
+          method: "PUT",
+          body: JSON.stringify({ messages: toSave }),
+        });
+        setSavedChats((items) => [updated, ...items.filter((item) => item._id !== updated._id)]);
+      } else {
+        const created = await request("/ai/conversations", {
+          method: "POST",
+          body: JSON.stringify({ messages: toSave }),
+        });
+        setConversationId(created._id);
+        setSavedChats((items) => [created, ...items]);
+      }
+    } catch (error) {
+      setMessages((items) => [
+        ...items,
+        { role: "assistant", content: "Sorry, " + (error?.message || "couldn't save this chat."), time: now() },
+      ]);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openConversation = async (id) => {
+    try {
+      const conversation = await request(`/ai/conversations/${id}`);
+      setMessages(conversation.messages?.length ? conversation.messages : [welcome]);
+      setConversationId(conversation._id);
+      setText("");
+    } catch (_error) {
+      // Conversation was deleted, or belongs to another user — drop it
+      // from the visible list rather than leaving a dead link around.
+      setSavedChats((items) => items.filter((item) => item._id !== id));
+      if (conversationId === id) clear();
+    }
+  };
+
+  const startRename = (chat) => {
+    setRenamingId(chat._id);
+    setRenameValue(chat.title);
+  };
+
+  const submitRename = async (id) => {
+    const title = renameValue.trim();
+    setRenamingId(null);
+    if (!title) return;
+    try {
+      const updated = await request(`/ai/conversations/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ title }),
+      });
+      setSavedChats((items) => items.map((item) => (item._id === id ? updated : item)));
+    } catch (_error) {
+      // Leave the list as-is; the user can retry the rename.
+    }
+  };
+
+  const deleteChat = async (id) => {
+    try {
+      await request(`/ai/conversations/${id}`, { method: "DELETE" });
+      setSavedChats((items) => items.filter((item) => item._id !== id));
+      if (conversationId === id) clear();
+    } catch (_error) {
+      // Leave the list as-is; the user can retry the delete.
+    } finally {
+      setConfirmDeleteId(null);
+    }
   };
 
   const send = async (event) => {
@@ -156,10 +288,25 @@ export default function Assistant() {
         body: JSON.stringify({ message, history: messages.slice(-8) }),
       });
 
-      setMessages((items) => [
-        ...items,
-        { role: "assistant", content: data?.reply || "I couldn't generate a response. Please try again.", time: now() },
-      ]);
+      const reply = { role: "assistant", content: data?.reply || "I couldn't generate a response. Please try again.", time: now() };
+      setMessages((items) => {
+        const next = [...items, reply];
+        // Auto-save: once a conversation has already been saved once, keep
+        // it up to date after every successful exchange. Failed/errored
+        // replies (the catch branch below) are never persisted here.
+        if (conversationId) {
+          const toSave = next.filter((item) => !item.isWelcome);
+          request(`/ai/conversations/${conversationId}`, {
+            method: "PUT",
+            body: JSON.stringify({ messages: toSave }),
+          })
+            .then((updated) => {
+              setSavedChats((chats) => [updated, ...chats.filter((chat) => chat._id !== updated._id)]);
+            })
+            .catch(() => {});
+        }
+        return next;
+      });
     } catch (error) {
       setMessages((items) => [
         ...items,
@@ -178,7 +325,7 @@ export default function Assistant() {
   };
 
   return (
-    <section className="assistant-page">
+    <section className={`assistant-page${isChatFullscreen ? " chat-fullscreen" : ""}`}>
       <header className="assistant-heading">
         <div>
           <span className="eyebrow">AI learning companion</span>
@@ -186,14 +333,93 @@ export default function Assistant() {
           <p>Developer-focused help, with your key safely kept on the server.</p>
         </div>
 
-        <button type="button" className="btn ghost" onClick={clear}>
-          <Plus size={16} /> New chat
-        </button>
+        <div className="assistant-controls">
+          <button type="button" className="btn ghost" onClick={clear}>
+            <Plus size={16} /> New chat
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={saveChat}
+            disabled={saving || messages.every((message) => message.isWelcome)}
+            title="Save this conversation"
+          >
+            <Save size={16} /> {saving ? "Saving..." : "Save Chat"}
+          </button>
+          <button
+            type="button"
+            className="tool-button"
+            onClick={() => setIsChatFullscreen((value) => !value)}
+            title={isChatFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            aria-label={isChatFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isChatFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+          </button>
+        </div>
       </header>
 
-      <div className="chat panel">
-        <div className="chat-messages">
-          {messages.map((message, index) => {
+      <div className="assistant-body">
+        {isAuthenticated && (
+          <aside className="saved-chats">
+            <strong>Saved Chats</strong>
+            {savedChats.length ? (
+              savedChats.map((chat) => (
+                <div key={chat._id} className={chat._id === conversationId ? "selected" : ""}>
+                  {renamingId === chat._id ? (
+                    <form
+                      className="rename-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        submitRename(chat._id);
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(event) => setRenameValue(event.target.value)}
+                        aria-label="Conversation title"
+                      />
+                      <button type="submit" aria-label="Save title">
+                        <Check size={13} />
+                      </button>
+                      <button type="button" aria-label="Cancel rename" onClick={() => setRenamingId(null)}>
+                        <X size={13} />
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <button className="chat-title" onClick={() => openConversation(chat._id)}>
+                        {chat.title}
+                      </button>
+                      <button aria-label={`Rename ${chat.title}`} onClick={() => startRename(chat)}>
+                        <Pencil size={13} />
+                      </button>
+                      {confirmDeleteId === chat._id ? (
+                        <button
+                          className="confirm-delete"
+                          aria-label={`Confirm delete ${chat.title}`}
+                          onClick={() => deleteChat(chat._id)}
+                        >
+                          <Check size={13} />
+                        </button>
+                      ) : (
+                        <button aria-label={`Delete ${chat.title}`} onClick={() => setConfirmDeleteId(chat._id)}>
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))
+            ) : (
+              <small>No saved chats yet.</small>
+            )}
+          </aside>
+        )}
+
+        <div className="chat panel">
+          <div className="chat-messages">
+            {messages.map((message, index) => {
             const hasCode = message.content?.includes("```");
             return (
               <article className={`message ${message.role}${hasCode ? " has-code" : ""}`} key={index}>
@@ -245,6 +471,7 @@ export default function Assistant() {
             <Send size={16} /> {loading ? "Thinking..." : "Send"}
           </button>
         </form>
+        </div>
       </div>
     </section>
   );

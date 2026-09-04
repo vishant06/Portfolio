@@ -80,6 +80,54 @@
   width: auto;
 }
 
+.thumbnail-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.thumbnail-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.thumbnail-field-preview {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex: 0 0 auto;
+}
+
+.thumbnail-field-empty {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: .68rem;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  flex: 0 0 auto;
+}
+
+.thumbnail-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumbnail-field-actions label.btn {
+  cursor: pointer;
+}
+
 .upload-box {
   border: 1px dashed var(--border);
   border-radius: 8px;

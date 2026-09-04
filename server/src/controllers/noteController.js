@@ -1,4 +1,5 @@
 import Note from '../models/Note.js';
+import { deleteCloudinaryAsset, uploadNoteThumbnail } from '../services/cloudinaryService.js';
 
 const list = (value) => Array.isArray(value) ? value : String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
 const slugify = (value) => String(value).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -65,6 +66,20 @@ export const getAdminNotes = async (_req, res) => res.json(await Note.find().sel
 
 export const getAdminNote = async (req, res) => { const note = await Note.findById(req.params.id).populate('author', 'name'); if (!note) return res.status(404).json({ message: 'Note not found' }); res.json(note); };
 
+// POST /api/notes/admin/thumbnail — the "Upload image" button in the admin
+// note editor. Uploads straight to Cloudinary and hands back a URL, which
+// the client then stores in the note's `thumbnail` field on save — same
+// two-step shape as the resume upload flow already used elsewhere.
+export const uploadThumbnail = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'Please choose an image file to upload' });
+    const result = await uploadNoteThumbnail(req.file);
+    res.status(201).json({ url: result.secure_url });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Unable to upload thumbnail' });
+  }
+};
+
 export const saveNote = async (req, res) => {
   try {
     const blocks = sanitizeBlocks(req.body.blocks);
@@ -84,6 +99,7 @@ export const updateNote = async (req, res) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ message: 'Note not found' });
+    const previousThumbnail = note.thumbnail;
     const patch = {
       ...req.body,
       ...(req.body.blocks !== undefined ? { blocks: sanitizeBlocks(req.body.blocks) } : {}),
@@ -95,10 +111,21 @@ export const updateNote = async (req, res) => {
       return res.status(400).json({ message: 'Add at least one content block before publishing.' });
     }
     Object.assign(note, patch);
-    res.json(await note.save());
+    const saved = await note.save();
+    // Old thumbnail was swapped out for a newly uploaded one — clean up the
+    // now-unused Cloudinary asset (no-op if it wasn't a Cloudinary URL).
+    if (previousThumbnail && previousThumbnail !== saved.thumbnail) {
+      await deleteCloudinaryAsset(previousThumbnail).catch(() => null);
+    }
+    res.json(saved);
   } catch (error) {
     res.status(error.name === 'ValidationError' ? 400 : (error.status || 500)).json({ message: error.message || 'Failed to update note' });
   }
 };
 
-export const deleteNote = async (req, res) => { const note = await Note.findByIdAndDelete(req.params.id); if (!note) return res.status(404).json({ message: 'Note not found' }); res.json({ message: 'Note deleted' }); };
+export const deleteNote = async (req, res) => {
+  const note = await Note.findByIdAndDelete(req.params.id);
+  if (!note) return res.status(404).json({ message: 'Note not found' });
+  if (note.thumbnail) await deleteCloudinaryAsset(note.thumbnail).catch(() => null);
+  res.json({ message: 'Note deleted' });
+};

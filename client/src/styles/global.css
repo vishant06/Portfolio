@@ -614,6 +614,165 @@ textarea:focus {
   margin: 0 auto;
 }
 
+.assistant-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.assistant-body {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.saved-chats {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-solid);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.saved-chats strong {
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 0 8px 7px;
+  color: var(--muted);
+}
+
+.saved-chats small {
+  color: var(--muted);
+  font-size: .82rem;
+  padding: 6px 8px;
+}
+
+.saved-chats > div {
+  display: grid;
+  grid-template-columns: 1fr 24px 24px;
+  align-items: center;
+  gap: 2px;
+  border-radius: 6px;
+}
+
+.saved-chats > div.selected {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.saved-chats .chat-title {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 8px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: .87rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-chats > div button:not(.chat-title) {
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  color: var(--muted);
+}
+
+.saved-chats > div button:hover {
+  color: var(--accent);
+}
+
+.saved-chats .confirm-delete {
+  color: #f87171 !important;
+}
+
+.saved-chats .rename-form {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.saved-chats .rename-form input {
+  flex: 1;
+  min-width: 0;
+  font-size: .85rem;
+}
+
+.saved-chats .rename-form button {
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+/* AI Chat fullscreen — an app-level overlay (not the browser Fullscreen
+   API) so the header, message list, and input stay reliably usable on
+   every device, including when the mobile keyboard is open. */
+.assistant-page.chat-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  max-width: none;
+  margin: 0;
+  padding: 16px clamp(12px, 3vw, 32px);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.assistant-page.chat-fullscreen .assistant-heading {
+  margin-bottom: 12px;
+  flex: none;
+}
+
+.assistant-page.chat-fullscreen .assistant-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.assistant-page.chat-fullscreen .saved-chats {
+  max-height: none;
+}
+
+.assistant-page.chat-fullscreen .chat.panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-page.chat-fullscreen .chat-messages {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+body.chat-fullscreen-lock {
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .assistant-body {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-chats {
+    max-height: 180px;
+  }
+}
+
 .chat {
   padding: 0;
   overflow: hidden;
@@ -926,6 +1085,45 @@ textarea:focus {
 
 .playground-shell:fullscreen {
   border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.playground-shell:fullscreen .play-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.playground-shell:fullscreen .console-panel {
+  flex: none;
+}
+
+/* Fallback for browsers/contexts where the Fullscreen API is unavailable
+   or denied (e.g. some mobile browsers, some embedded iframes) — an
+   app-level fixed overlay gives the same "dedicated focused" result. */
+.playground-shell.fit-to-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.playground-shell.fit-to-screen .play-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.playground-shell.fit-to-screen .console-panel {
+  flex: none;
+}
+
+body:has(.playground-shell.fit-to-screen) {
+  overflow: hidden;
 }
 
 .play-toolbar {
@@ -991,6 +1189,12 @@ textarea:focus {
 
 .tool-button:hover {
   color: var(--accent);
+  border-color: var(--accent);
+}
+
+.tool-button.active {
+  color: #03121f;
+  background: var(--accent);
   border-color: var(--accent);
 }
 

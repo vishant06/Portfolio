@@ -6,12 +6,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/logo-splash.png",
+
+    "icon": "./assets/logo-icon.png",
+
     "backgroundColor": "#07111f",
+
     "android": {
       "package": "com.vishant.buildwithvishant",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo-splash.png",
+        "foregroundImage": "./assets/logo-icon.png",
         "backgroundColor": "#07111f"
       },
       "permissions": [
@@ -20,14 +23,16 @@
         "android.permission.RECORD_AUDIO"
       ]
     },
+
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
           "image": "./assets/logo-splash.png",
-          "resizeMode": "contain",
-          "backgroundColor": "#07111f"
+          "backgroundColor": "#111820",
+          "imageWidth": 220,
+          "resizeMode": "contain"
         }
       ],
       [
@@ -37,6 +42,7 @@
         }
       ]
     ],
+
     "extra": {
       "router": {
         "origin": false

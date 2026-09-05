@@ -50,13 +50,23 @@ const oauthConfig = {
 
 const clientUrl = () => (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
 const callbackUrl = (provider) => `${(process.env.SERVER_URL || 'http://localhost:5000').replace(/\/$/, '')}/api/auth/${provider}/callback`;
-const redirectWithError = (res, message) => res.redirect(`${clientUrl()}/auth/callback#error=${encodeURIComponent(message)}`);
-const redirectWithSession = (res, user) => {
+
+// The mobile app can't receive a redirect to a website URL, so it starts
+// the flow with `?platform=mobile`. That preference travels alongside the
+// existing CSRF `oauth_state` cookie (same lifetime/flags) so the callback
+// — which only ever gets `code`/`state` back from Google/GitHub — knows
+// where to send the user afterwards. Nothing about the website flow
+// changes when this cookie is absent.
+const mobileScheme = () => (process.env.MOBILE_APP_SCHEME || 'buildwithvishant').replace(/:\/*$/, '');
+const isMobileFlow = (req) => readCookie(req, 'oauth_target') === 'mobile';
+const targetBase = (req) => (isMobileFlow(req) ? `${mobileScheme()}://auth/callback` : `${clientUrl()}/auth/callback`);
+const redirectWithError = (req, res, message) => res.redirect(`${targetBase(req)}#error=${encodeURIComponent(message)}`);
+const redirectWithSession = (req, res, user) => {
   const params = new URLSearchParams({
     token: signToken(user._id),
     user: JSON.stringify(publicUser(user))
   });
-  res.redirect(`${clientUrl()}/auth/callback#${params.toString()}`);
+  res.redirect(`${targetBase(req)}#${params.toString()}`);
 };
 
 const generateUsername = async (base) => {
@@ -280,7 +290,11 @@ export const startOAuth = (req, res) => {
     message: `${provider === 'google' ? 'Google' : 'GitHub'} sign-in is not configured yet`
   });
   const state = crypto.randomBytes(32).toString('hex');
-  res.setHeader('Set-Cookie', `oauth_state=${state}; ${cookieOptions()}`);
+  const cookies = [`oauth_state=${state}; ${cookieOptions()}`];
+  // Only ever set to the literal 'mobile' — never trusted for anything
+  // beyond picking which of two fixed redirect targets to use.
+  if (req.query.platform === 'mobile') cookies.push(`oauth_target=mobile; ${cookieOptions()}`);
+  res.setHeader('Set-Cookie', cookies);
   const params = new URLSearchParams({
     client_id: config.clientId(),
     redirect_uri: callbackUrl(provider),
@@ -296,11 +310,14 @@ export const oauthCallback = async (req, res, next) => {
     provider
   } = req.params;
   const config = oauthConfig[provider];
-  if (!config) return redirectWithError(res, 'Unknown sign-in provider');
+  if (!config) return redirectWithError(req, res, 'Unknown sign-in provider');
   try {
     const expectedState = readCookie(req, 'oauth_state');
-    res.setHeader('Set-Cookie', 'oauth_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
-    if (!req.query.code || !expectedState || !req.query.state || !crypto.timingSafeEqual(Buffer.from(expectedState), Buffer.from(req.query.state))) return redirectWithError(res, 'Your sign-in session expired. Please try again.');
+    res.setHeader('Set-Cookie', [
+      'oauth_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+      'oauth_target=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0'
+    ]);
+    if (!req.query.code || !expectedState || !req.query.state || !crypto.timingSafeEqual(Buffer.from(expectedState), Buffer.from(req.query.state))) return redirectWithError(req, res, 'Your sign-in session expired. Please try again.');
     const tokenResponse = await fetch(config.tokenUrl, {
       method: 'POST',
       headers: {
@@ -369,9 +386,9 @@ export const oauthCallback = async (req, res, next) => {
     } else if (applyProviderAvatar(user)) {
       await user.save();
     }
-    redirectWithSession(res, user);
+    redirectWithSession(req, res, user);
   } catch (error) {
-    if (error.message) return redirectWithError(res, error.message);
+    if (error.message) return redirectWithError(req, res, error.message);
     next(error);
   }
 };
